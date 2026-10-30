@@ -1,72 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Profile App</title>
-    <script type="module"
-    src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
-    <script nomodule
-    src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
-    <link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css">
-</head>
-<body>
-    <ion-app>
-        <ion-header>
-            <ion-toolbar>
-                <ion-title>Student Profile App</ion-title>
-            </ion-toolbar>
-        </ion-header>
-
-        <ion-content class="ion-padding">
-            <h2>Student Information</h2>
-            <ion-item>
-                <ion-input 
-                id="studentName"
-                label="Student Name"
-                label-placement="floating"
-                placeholder="Enter student name"></ion-input>
-            </ion-item>
-
-            <ion-item>
-                <ion-input
-                id="studentAge"
-                type="number"
-                label="Age"
-                label-placement="floating"
-                placeholder="Enter student age"></ion-input>
-            </ion-item>
-
-            <ion-item>
-                <ion-input
-                id="studentCourse"
-                label="Course"
-                label-placement="floating"  
-                placeholder="Enter student course"></ion-input>
-            </ion-item>
-
-            <ion-button
-            id="saveProfileButton"
-            expand="block">Save Student Profile</ion-button>
-
-            <h2>SAVED STUDENT PROFILE</h2>
-
-            <div id="savedProfile">No student profile saved yet.</div><br>
-
-            <ion-button
-            id="deleteProfileButton"
-            expand="block"
-            color="danger">Delete Saved Student Profile</ion-button>
-
-            <h2> API RESULT</h2>
-            <div id="apiStatus">Loading from the server...</div>
-            <div id="apiResults"></div>
-
-            
-        </ion-content>
-    </ion-app>
-    <script src="app.js"></script>
-    
-</body>
-</html>
+name: Build APK
+on:
+push:
+branches: [main, master]
+workflow_dispatch:
+Problem Fix
+4 GB RAM laptop cannot run Android Studio,
+Gradle and Cordova comfortably
+Build on GitHub Actions with the same tools
+instead of installing them locally
+Build failed at the setup-android step Replaced it with a step that uses the
+Android SDK already on GitHub's computer
+and adds platform 36 and build-tools 36
+Build file had a stray Yaml first line and
+broken spacing
+Cleared the editor with Ctrl + A, Delete,
+then pasted again with the Copy button so
+line 1 reads name: Build APK
+Commit error: "A file with the same name
+already exists"
+The file was already saved on the first click,
+so cancel and check the repo's file list
+Messenger would not send the APK, or said
+invalid file format
+Used Google Drive or a USB cable to move
+the APK to the phone
+How I Built My Calculator APK (WMA 3 Activity)
+Page 3 of 6
+jobs:
+build:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
+- uses: actions/setup-node@v4
+with:
+node-version: 20
+# JDK 17
+- uses: actions/setup-java@v4
+with:
+distribution: temurin
+java-version: 17
+# Gradle 8.14.2
+- uses: gradle/actions/setup-gradle@v4
+with:
+gradle-version: 8.14.2
+# Android SDK (already on GitHub's computer, just add Android 16 / API
+36)
+- name: Install Android platform and build tools
+run: |
+yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --
+licenses > /dev/null || true
+"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+"platforms;android-36" "build-tools;36.0.0" "platform-tools"
+- name: Install Cordova
+run: npm install -g cordova
+- name: Create Cordova project
+run: |
+cordova create cordova-app com.example.calculator "Simple
+Calculator"
+cd cordova-app
+cordova platform add android
+- name: Copy app files into www
+run: |
+rm -rf cordova-app/www/*
+rsync -a --exclude='.git' --exclude='.github' --exclude='cordovaapp' --exclude='README*' ./ cordova-app/www/
+How I Built My Calculator APK (WMA 3 Activity)
+Page 4 of 6
+test -f cordova-app/www/index.html || (echo "ERROR: index.html not
+found in repo root" && exit 1)
+- name: Build the APK
+run: |
+cd cordova-app
+cordova requirements
+cordova build android
+- name: Upload APK
+uses: actions/upload-artifact@v4
+with:
+name: simple-calculator-apk
+path: cordovaapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
